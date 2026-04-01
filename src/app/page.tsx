@@ -1,95 +1,114 @@
 "use client";
+
 import { useState } from "react";
 
-export default function Page() {
-  const [formData, setFormData] = useState<Record<string, string>>({
-      "theme": "Haunted Mansion",
-      "difficulty": "Beginner",
-      "playerCount": "2 players",
-      "timeLimit": "30 minutes",
-  });
+type FormData = {
+  theme: "Heist",
+  difficulty: "Beginner",
+  playerCount: "2-4",
+  roomSetting: "Single Room",
+  timeLimit: "30 minutes",
+  narrativeDepth: "Light (puzzle-focused)"
+};
+
+export default function Home() {
+  const [formData, setFormData] = useState<FormData>({
+  theme: "Heist",
+  difficulty: "Beginner",
+  playerCount: "2-4",
+  roomSetting: "Single Room",
+  timeLimit: "30 minutes",
+  narrativeDepth: "Light (puzzle-focused)"
+});
   const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
 
-  const handleGenerate = async (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsGenerating(true);
     setError("");
     setResult("");
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-        theme: formData["theme"],
-        difficulty: formData["difficulty"],
-        playerCount: formData["playerCount"],
-        timeLimit: formData["timeLimit"],
-        }),
+        body: JSON.stringify({ formData, systemPrompt: '' + sp_esc + '' }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Something went wrong."); return; }
-      setResult(data.result);
-    } catch { setError("Failed to generate content."); }
-    finally { setLoading(false); }
+      if (data.error) { setError(data.error); return; }
+      setResult(data.result || "");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-orange-950 via-slate-900 to-orange-950 text-white p-6">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-10 text-center">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 to-orange-200 bg-clip-text text-transparent">
-            🔐 AI Escape Room Designer
+    <div className="min-h-screen bg-black text-zinc-100">
+      <div className="max-w-4xl mx-auto p-6">
+        <header className="mb-8">
+          <h1 className={"text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent"}>
+            {'' + title_esc + ''}
           </h1>
-          <p className="text-slate-400">Create immersive escape room experiences</p>
+          <p className="text-zinc-400 mt-2 text-sm">Fill in the options below and generate your game content instantly.</p>
         </header>
 
-        <form onSubmit={handleGenerate} className="bg-slate-800/60 backdrop-blur rounded-2xl p-6 mb-8 border border-orange-500/20 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-medium text-orange-300 mb-2">Theme</label>
-              <select value={formData["theme"]} onChange={e => setFormData({...formData, "theme": e.target.value})}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-                {Array.from({length: 8}).map((_, i) => <option key={i}>{["Haunted Mansion", "Bank Heist", "Spy Agency", "Space Station", "Haunted Hospital", "Egyptian Tomb", "Mad Scientist Lab", "Pirate Ship"]}[i]</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-orange-300 mb-2">Difficulty</label>
-              <select value={formData["difficulty"]} onChange={e => setFormData({...formData, "difficulty": e.target.value})}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-                {Array.from({length: 4}).map((_, i) => <option key={i}>{["Beginner", "Intermediate", "Advanced", "Expert"]}[i]</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-orange-300 mb-2">Player Count</label>
-              <select value={formData["playerCount"]} onChange={e => setFormData({...formData, "playerCount": e.target.value})}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-                {Array.from({length: 4}).map((_, i) => <option key={i}>{["2 players", "3-4 players", "5-6 players", "7-8 players"]}[i]</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-orange-300 mb-2">Time Limit</label>
-              <select value={formData["timeLimit"]} onChange={e => setFormData({...formData, "timeLimit": e.target.value})}
-                className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
-                {Array.from({length: 5}).map((_, i) => <option key={i}>{["30 minutes", "45 minutes", "60 minutes", "75 minutes", "90 minutes"]}[i]</option>)}
-              </select>
-            </div>          </div>
-          <button type="submit" disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 rounded-xl font-semibold text-white transition-all disabled:opacity-50">
-            {loading ? "Generating..." : "🔐 Generate"}
-          </button>
-        </form>
-
-        {error && <div className="bg-red-900/40 border border-red-500/40 rounded-xl p-4 text-red-300 mb-6">{error}</div>}
-
-        {result && (
-          <div className="bg-slate-800/60 backdrop-blur rounded-2xl p-6 border border-orange-500/20">
-            <h2 className="text-xl font-bold text-orange-300 mb-4">Generated Content</h2>
-            <div className="whitespace-pre-wrap text-slate-200 leading-relaxed">{result}</div>
+        <div className="grid lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-2">
+            <form onSubmit={handleSubmit} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+              <div className="space-y-4">
+<div><label className="block text-sm font-medium text-zinc-300 mb-1.5">Room Theme</label><select name="theme" value={formData.theme} onChange={handleChange} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 text-zinc-200">{['Heist','Supernatural','Mystery','Espionage','Horror','Adventure','Sci-Fi'].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+<div><label className="block text-sm font-medium text-zinc-300 mb-1.5">Difficulty</label><select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 text-zinc-200">{['Beginner','Experienced','Expert'].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+<div><label className="block text-sm font-medium text-zinc-300 mb-1.5">Player Count Range</label><select name="playerCount" value={formData.playerCount} onChange={handleChange} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 text-zinc-200">{['2-4','4-6','6-8','8-12'].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+<div><label className="block text-sm font-medium text-zinc-300 mb-1.5">Room Setting</label><select name="roomSetting" value={formData.roomSetting} onChange={handleChange} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 text-zinc-200">{['Single Room','Multi-Room (2-3 connected)','Multi-Room (4+)'].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+<div><label className="block text-sm font-medium text-zinc-300 mb-1.5">Time Limit</label><select name="timeLimit" value={formData.timeLimit} onChange={handleChange} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 text-zinc-200">{['30 minutes','60 minutes','90 minutes'].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+<div><label className="block text-sm font-medium text-zinc-300 mb-1.5">Narrative Depth</label><select name="narrativeDepth" value={formData.narrativeDepth} onChange={handleChange} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 text-zinc-200">{['Light (puzzle-focused)','Medium','Deep (story-rich)'].map(o=><option key={o} value={o}>{o}</option>)}</select></div>
+              </div>
+              <button
+                type="submit"
+                disabled={isGenerating}
+                className={"w-full bg-orange-600 hover:opacity-90 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-all text-sm"}
+              >
+                {isGenerating ? "Generating..." : "Generate Content"}
+              </button>
+              {error && (
+                <p className="text-red-400 text-sm bg-red-500/10 rounded-lg p-2">{error}</p>
+              )}
+            </form>
           </div>
-        )}
+
+          <div className="lg:col-span-3">
+            {result ? (
+              <div className={"bg-orange-500/10 border border-zinc-800 rounded-2xl p-5"}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className={"font-semibold text-orange-400"}>Generated Result</h2>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(result)}
+                    className="text-xs text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded bg-zinc-800"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <div className="prose prose-invert prose-sm max-w-none text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                  {result}
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-zinc-600 border-2 border-dashed border-zinc-800 rounded-2xl p-12 min-h-96">
+                <span className="text-4xl mb-4">&#127918;</span>
+                <p className="text-center text-sm">Your generated game content will appear here.</p>
+                <p className="text-center text-xs text-zinc-700 mt-2">Fill out the form and click Generate</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
